@@ -560,7 +560,26 @@ class Checker:
         self.check_references()
         return self.results
 
-    # ── 生成报告 ───────────────────────────────
+    # ── 人工核查清单（文本 / HTML 共用） ──────────
+    MANUAL_CHECKS = [
+        "正文字体：中文宋体 + 英文 Times New Roman，小四（12pt）",
+        "行距：全文统一多倍行距 1.25（含表格内文字）",
+        "首行缩进：每段首行缩进 2 字符（不可用空格代替）",
+        "一级标题居左（黑体小三，非居中）",
+        "图/表题注位置：图题在图下，表题在表上",
+        "图/表题注字体：五号宋体，居中",
+        "页眉：论文中文题目，宋体五号居中（封面/声明页无页眉）",
+        "页码：正文从第1页起阿拉伯数字居中；摘要/目录用罗马数字",
+        "打印：封面/声明/摘要单面；目录/正文/致谢双面",
+        "原创性声明、使用授权声明：手写签字，日期已填",
+        "修改记录：四项内容已填写，查重重复比已填入",
+        "三线表：无竖线，只有顶线、栏目线、底线",
+        "公式编号：(章号.序号) 居中+右对齐",
+        "参考文献若使用 Word 自动列表编号：目视确认显示为 [1][2]… 格式",
+        "外文翻译（原文+译文）已准备",
+    ]
+
+    # ── 文本报告 ───────────────────────────────
     def report(self) -> str:
         errors = [r for r in self.results if not r.ok and r.level == "error"]
         warns  = [r for r in self.results if not r.ok and r.level == "warn"]
@@ -597,9 +616,7 @@ class Checker:
                 ]
 
         lines += ["─" * 65, "【✓ 已通过】", "─" * 65]
-        for r in [x for x in passed if x.level != "info"]:
-            lines.append(f"  ✓ [{r.category}] {r.name}：{r.actual}")
-        for r in [x for x in passed if x.level == "info"]:
+        for r in passed:
             lines.append(f"  ✓ [{r.category}] {r.name}：{r.actual}")
 
         lines += [
@@ -607,44 +624,217 @@ class Checker:
             "=" * 65,
             "【需人工核对的项目（程序无法自动检查）】",
             "─" * 65,
-            "  □ 正文字体是否为宋体（中文）+ Times New Roman（英文/数字）",
-            "  □ 行距是否全文统一为1.25倍（含表格内文字）",
-            "  □ 每段首行缩进是否为2字符",
-            "  □ 一级标题是否居中",
-            "  □ 图/表题注位置：图题在图下，表题在表上",
-            "  □ 图/表题注字体：五号宋体，居中",
-            "  □ 页眉内容是否为论文题目，宋体五号居中",
-            "  □ 页码是否从正文开始连续编号，居中",
-            "  □ 封面到目录是否单面打印，正文是否双面打印",
-            "  □ 原创性声明、使用授权声明是否已签字填日期",
-            "  □ 修改记录是否已按格式填写（含重复比数据）",
-            "  □ 三线表格式（仅顶线、栏目线、底线，无竖线）",
-            "  □ 公式编号：(章号-序号) 右对齐",
-            "  □ 外文翻译原文+译文是否准备",
-            "=" * 65,
         ]
+        for item in self.MANUAL_CHECKS:
+            lines.append(f"  □ {item}")
+        lines.append("=" * 65)
         return "\n".join(lines)
+
+    # ── HTML 报告 ──────────────────────────────
+    def report_html(self) -> str:
+        import html as _html
+        from datetime import datetime
+
+        errors = [r for r in self.results if not r.ok and r.level == "error"]
+        warns  = [r for r in self.results if not r.ok and r.level == "warn"]
+        passed = [r for r in self.results if r.ok]
+        now    = datetime.now().strftime("%Y-%m-%d %H:%M")
+
+        def esc(s): return _html.escape(str(s))
+
+        def card(r, color):
+            border = {"red": "#fca5a5", "amber": "#fcd34d", "green": "#86efac"}[color]
+            bg     = {"red": "#fff5f5", "amber": "#fffbeb", "green": "#f0fdf4"}[color]
+            icon   = {"red": "✗", "amber": "△", "green": "✓"}[color]
+            ic     = {"red": "#c53030", "amber": "#b7791f", "green": "#276749"}[color]
+            return f"""
+            <div style="background:{bg};border:1px solid {border};border-radius:8px;
+                        padding:1rem 1.2rem;margin-bottom:.7rem;">
+              <div style="display:flex;align-items:baseline;gap:.6rem;margin-bottom:.35rem;">
+                <span style="font-weight:700;color:{ic};font-size:1rem;">{icon}</span>
+                <span style="font-size:.8rem;color:#6b7280;font-weight:500;">
+                  [{esc(r.category)}]</span>
+                <span style="font-weight:600;font-size:.92rem;">{esc(r.name)}</span>
+              </div>
+              <div style="font-size:.83rem;color:#374151;padding-left:1.4rem;">
+                <span style="color:#6b7280;">要求：</span>{esc(r.expected)}<br>
+                <span style="color:#6b7280;">实际：</span><strong>{esc(r.actual)}</strong>
+              </div>
+            </div>"""
+
+        errors_html = "".join(card(r, "red")   for r in errors)
+        warns_html  = "".join(card(r, "amber") for r in warns)
+        passed_html = "".join(card(r, "green") for r in passed)
+
+        manual_items = "".join(
+            f'<li><label style="cursor:pointer;">'
+            f'<input type="checkbox" style="margin-right:.5rem;">{esc(item)}'
+            f'</label></li>\n'
+            for item in self.MANUAL_CHECKS
+        )
+
+        n_all = len(self.results)
+        n_ok  = len(passed)
+        n_err = len(errors)
+        n_wrn = len(warns)
+
+        status_color = "#c53030" if n_err else ("#b7791f" if n_wrn else "#276749")
+        status_text  = (f"{n_err} 项必须修改" if n_err else
+                        (f"{n_wrn} 项建议核对" if n_wrn else "全部通过"))
+
+        return f"""<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>格式审查报告 · {esc(self.path.name)}</title>
+<style>
+  *{{box-sizing:border-box;margin:0;padding:0}}
+  body{{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",
+       "Microsoft YaHei",sans-serif;background:#f5f7fa;color:#1a2433;line-height:1.7}}
+  .header{{background:linear-gradient(135deg,#00335e,#004f8c);color:#fff;
+           padding:2rem 2rem 1.5rem}}
+  .header h1{{font-size:1.25rem;font-weight:700;margin-bottom:.3rem}}
+  .header .meta{{font-size:.82rem;opacity:.75}}
+  .status-banner{{background:#fff;border-bottom:3px solid {status_color};
+                  padding:.75rem 2rem;font-size:.9rem;font-weight:600;
+                  color:{status_color};display:flex;align-items:center;gap:.5rem}}
+  .metrics{{display:flex;flex-wrap:wrap;background:#fff;
+            border-bottom:1px solid #e8ecf1;padding:.5rem 1rem}}
+  .metric{{flex:1;min-width:100px;text-align:center;padding:.8rem .5rem}}
+  .metric-num{{font-size:1.8rem;font-weight:700;line-height:1}}
+  .metric-label{{font-size:.73rem;color:#9aa5b4;margin-top:.2rem}}
+  .body{{max-width:800px;margin:0 auto;padding:1.5rem}}
+  .section{{margin-bottom:1.8rem}}
+  .section-head{{font-size:1rem;font-weight:700;margin-bottom:.9rem;
+                 display:flex;align-items:center;gap:.5rem}}
+  .section-head .pill{{font-size:.72rem;font-weight:600;padding:.15rem .55rem;
+                       border-radius:20px}}
+  .pill-red   {{background:#fff0f0;color:#c53030;border:1px solid #fca5a5}}
+  .pill-amber {{background:#fffbeb;color:#b7791f;border:1px solid #fcd34d}}
+  .pill-green {{background:#f0fdf4;color:#276749;border:1px solid #86efac}}
+  details{{background:#fff;border:1px solid #e8ecf1;border-radius:8px;overflow:hidden}}
+  details>summary{{padding:.85rem 1.1rem;cursor:pointer;font-weight:600;
+                   font-size:.92rem;list-style:none;display:flex;
+                   align-items:center;justify-content:space-between}}
+  details>summary::after{{content:"▸";transition:transform .2s}}
+  details[open]>summary::after{{transform:rotate(90deg)}}
+  details>div{{padding:.2rem 1.1rem 1rem}}
+  .manual-list{{list-style:none;display:flex;flex-direction:column;gap:.5rem;
+                padding:.2rem 1.1rem 1rem}}
+  .manual-list li{{font-size:.87rem;color:#374151;
+                   border-bottom:1px solid #f0f0f0;padding-bottom:.45rem}}
+  .manual-list li:last-child{{border-bottom:none}}
+  .footer{{text-align:center;font-size:.78rem;color:#9aa5b4;
+           padding:1.5rem;border-top:1px solid #e8ecf1;background:#fff;
+           margin-top:2rem}}
+  @media(max-width:500px){{.metric-num{{font-size:1.3rem}}}}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>大连理工大学本科毕业论文 · 格式审查报告</h1>
+  <div class="meta">文件：{esc(self.path.name)} &nbsp;·&nbsp; 审查时间：{now}</div>
+</div>
+
+<div class="status-banner">
+  {'⚠' if n_err or n_wrn else '✓'} &nbsp;{status_text}
+</div>
+
+<div class="metrics">
+  <div class="metric">
+    <div class="metric-num" style="color:#1a2433">{n_all}</div>
+    <div class="metric-label">检查项</div>
+  </div>
+  <div class="metric">
+    <div class="metric-num" style="color:#276749">{n_ok}</div>
+    <div class="metric-label">已通过</div>
+  </div>
+  <div class="metric">
+    <div class="metric-num" style="color:#c53030">{n_err}</div>
+    <div class="metric-label">必须修改</div>
+  </div>
+  <div class="metric">
+    <div class="metric-num" style="color:#b7791f">{n_wrn}</div>
+    <div class="metric-label">建议核对</div>
+  </div>
+</div>
+
+<div class="body">
+
+  {f'''<div class="section">
+    <div class="section-head">
+      <span class="pill pill-red">✗ 必须修改</span>
+    </div>
+    {errors_html}
+  </div>''' if errors else ''}
+
+  {f'''<div class="section">
+    <div class="section-head">
+      <span class="pill pill-amber">△ 建议核对</span>
+    </div>
+    {warns_html}
+  </div>''' if warns else ''}
+
+  <div class="section">
+    <details {"open" if not errors and not warns else ""}>
+      <summary>
+        <span>✓ 已通过 &nbsp;<span class="pill pill-green"
+          style="font-size:.75rem">{n_ok} 项</span></span>
+      </summary>
+      <div>{passed_html}</div>
+    </details>
+  </div>
+
+  <div class="section">
+    <details>
+      <summary>□ 需人工核对（打印前逐项确认）</summary>
+      <ul class="manual-list">
+        {manual_items}
+      </ul>
+    </details>
+  </div>
+
+</div>
+
+<div class="footer">
+  仅供辅助审查，最终以学院审核意见为准 &nbsp;·&nbsp;
+  <a href="https://github.com/jackeyloveseven/dut-thesis-format-checker"
+     style="color:#9aa5b4">dut-thesis-format-checker</a>
+</div>
+
+</body>
+</html>"""
 
 
 # ──────────────────────────────────────────────
 # 入口
 # ──────────────────────────────────────────────
 def main():
-    if len(sys.argv) < 2:
-        # 自动查找当前目录中的 .docx
+    args = sys.argv[1:]
+    gen_html = "--html" in args
+    args = [a for a in args if a != "--html"]
+
+    if not args:
         docx_files = list(Path(".").glob("*.docx"))
         if not docx_files:
-            print("用法：python dut_format_checker.py <论文.docx>")
+            print("用法：python dut_format_checker.py <论文.docx> [--html]")
             sys.exit(1)
         docx_path = str(docx_files[0])
         print(f"自动选择：{docx_path}\n")
     else:
-        docx_path = sys.argv[1]
+        docx_path = args[0]
 
     checker = Checker(docx_path)
     checker.run()
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     print(checker.report())
+
+    if gen_html:
+        out = Path(docx_path).with_suffix("") .parent / (Path(docx_path).stem + "_格式报告.html")
+        out.write_text(checker.report_html(), encoding="utf-8")
+        print(f"\n✓ HTML 报告已生成：{out}")
 
 
 if __name__ == "__main__":
