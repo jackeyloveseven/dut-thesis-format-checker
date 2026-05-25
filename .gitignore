@@ -1,0 +1,18 @@
+# 论文原文（含个人信息）
+*.docx
+*.pdf
+
+# 提取的中间文件
+_extracted.txt
+
+# 修改清单（含学生个人信息）
+修改清单_*
+
+# Claude 项目配置（保留 commands 目录，排除其他）
+.claude/projects/
+.claude/settings*
+memory/
+
+# Python 缓存
+__pycache__/
+*.pyc
