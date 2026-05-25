@@ -1,5 +1,10 @@
 # 大连理工大学本科毕业论文格式自动审查工具
 
+[![GitHub Pages](https://img.shields.io/badge/文档-GitHub%20Pages-10a37f?style=flat-square&logo=github)](https://jackeyloveseven.github.io/dut-thesis-format-checker/)
+[![Python](https://img.shields.io/badge/Python-3.8+-3776ab?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
+[![stdlib only](https://img.shields.io/badge/依赖-标准库%20only-lightgrey?style=flat-square)](https://docs.python.org/3/library/)
+[![标准](https://img.shields.io/badge/标准-DUT%202026.05-10a37f?style=flat-square)](https://jackeyloveseven.github.io/dut-thesis-format-checker/#standard)
+
 依据《大连理工大学大学生毕业设计（论文）规范化要求》及官方模板（2026年5月版）。
 
 ## 环境要求
