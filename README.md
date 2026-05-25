@@ -1,6 +1,6 @@
 # 大连理工大学本科毕业论文格式自动审查工具
 
-依据《大连理工大学大学生毕业设计（论文）规范化要求》及官方模板（2025年5月版）。
+依据《大连理工大学大学生毕业设计（论文）规范化要求》及官方模板（2026年5月版）。
 
 ## 环境要求
 
@@ -19,10 +19,16 @@ python dut_format_checker.py 论文.docx
 python dut_format_checker.py
 ```
 
+生成可视化 HTML 报告（双击浏览器打开）：
+
+```bash
+python dut_format_checker.py 论文.docx --html
+```
+
 ## 检查项一览
 
 | 类别 | 检查内容 | 说明 |
-|------|----------|------|
+| ---- | -------- | ---- |
 | 页面设置 | 纸张大小、四边页边距 | A4；上3.5/下2.5/左2.5/右2.5 cm |
 | 正文样式 | 字号、行距 | 小四(12pt)；1.25倍行距 |
 | 标题样式 | 1-3级字体、字号、行距 | 黑体；小三/四号/小四；≥1.5倍 |
@@ -37,7 +43,7 @@ python dut_format_checker.py
 
 ## 输出说明
 
-```
+```text
 【✗ 必须修改】   — 明确违反规范，提交前必须改
 【△ 建议修改】   — 可能有问题，建议人工确认
 【✓ 已通过】     — 自动检查通过
@@ -55,7 +61,7 @@ python dut_format_checker.py
 
 将本目录下的 `.claude/commands/dut-format-check.md` 放入项目的 `.claude/commands/` 目录，即可在 Claude Code 中使用 `/dut-format-check` 命令：
 
-```
+```text
 /dut-format-check 论文.docx
 ```
 
@@ -64,7 +70,7 @@ python dut_format_checker.py
 ## 大连理工格式速查
 
 | 项目 | 标准 |
-|------|------|
+| ---- | ---- |
 | 纸张 | A4，210×297 mm |
 | 页边距 | 上3.5 / 下2.5 / 左2.5 / 右2.5 cm |
 | 正文字号 | 小四（12pt），中文宋体，英文 Times New Roman |

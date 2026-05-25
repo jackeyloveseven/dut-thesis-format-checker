@@ -639,48 +639,69 @@ class Checker:
         warns  = [r for r in self.results if not r.ok and r.level == "warn"]
         passed = [r for r in self.results if r.ok]
         now    = datetime.now().strftime("%Y-%m-%d %H:%M")
+        n_all  = len(self.results)
+        n_ok   = len(passed)
+        n_err  = len(errors)
+        n_wrn  = len(warns)
+        pct    = int(n_ok / n_all * 100) if n_all else 0
 
         def esc(s): return _html.escape(str(s))
 
-        def card(r, color):
-            border = {"red": "#fca5a5", "amber": "#fcd34d", "green": "#86efac"}[color]
-            bg     = {"red": "#fff5f5", "amber": "#fffbeb", "green": "#f0fdf4"}[color]
-            icon   = {"red": "✗", "amber": "△", "green": "✓"}[color]
-            ic     = {"red": "#c53030", "amber": "#b7791f", "green": "#276749"}[color]
-            return f"""
-            <div style="background:{bg};border:1px solid {border};border-radius:8px;
-                        padding:1rem 1.2rem;margin-bottom:.7rem;">
-              <div style="display:flex;align-items:baseline;gap:.6rem;margin-bottom:.35rem;">
-                <span style="font-weight:700;color:{ic};font-size:1rem;">{icon}</span>
-                <span style="font-size:.8rem;color:#6b7280;font-weight:500;">
-                  [{esc(r.category)}]</span>
-                <span style="font-weight:600;font-size:.92rem;">{esc(r.name)}</span>
-              </div>
-              <div style="font-size:.83rem;color:#374151;padding-left:1.4rem;">
-                <span style="color:#6b7280;">要求：</span>{esc(r.expected)}<br>
-                <span style="color:#6b7280;">实际：</span><strong>{esc(r.actual)}</strong>
-              </div>
-            </div>"""
+        def issue_card(r, variant):
+            cfg = {
+                "error": ("#ef4444", "#fef2f2", "#fecaca", "✕", "必须修改"),
+                "warn":  ("#f59e0b", "#fffbeb", "#fde68a", "！", "建议核对"),
+            }[variant]
+            accent, bg, border, icon, tag = cfg
+            return f"""<div class="icard" style="--accent:{accent};--bg:{bg};--border:{border}">
+  <div class="icard-left"><span class="icard-icon">{icon}</span></div>
+  <div class="icard-body">
+    <div class="icard-head">
+      <span class="icard-tag" style="color:{accent}">{tag}</span>
+      <span class="icard-cat">{esc(r.category)}</span>
+      <span class="icard-name">{esc(r.name)}</span>
+    </div>
+    <div class="icard-row"><span class="lbl">要求</span>{esc(r.expected)}</div>
+    <div class="icard-row"><span class="lbl">实际</span><strong>{esc(r.actual)}</strong></div>
+  </div>
+</div>"""
 
-        errors_html = "".join(card(r, "red")   for r in errors)
-        warns_html  = "".join(card(r, "amber") for r in warns)
-        passed_html = "".join(card(r, "green") for r in passed)
+        def pass_row(r):
+            return (f'<div class="prow"><span class="pcheck">✓</span>'
+                    f'<span class="pcat">{esc(r.category)}</span>'
+                    f'<span class="pname">{esc(r.name)}</span>'
+                    f'<span class="pval">{esc(r.actual)}</span></div>')
 
-        manual_items = "".join(
-            f'<li><label style="cursor:pointer;">'
-            f'<input type="checkbox" style="margin-right:.5rem;">{esc(item)}'
-            f'</label></li>\n'
+        errors_html = "\n".join(issue_card(r, "error") for r in errors)
+        warns_html  = "\n".join(issue_card(r, "warn")  for r in warns)
+        passed_html = "\n".join(pass_row(r)             for r in passed)
+
+        manual_html = "\n".join(
+            f'<label class="mitem"><input type="checkbox"><span>{esc(item)}</span></label>'
             for item in self.MANUAL_CHECKS
         )
 
-        n_all = len(self.results)
-        n_ok  = len(passed)
-        n_err = len(errors)
-        n_wrn = len(warns)
+        overall_color = "#ef4444" if n_err else ("#f59e0b" if n_wrn else "#10a37f")
+        overall_label = f"{n_err} 项必须修改" if n_err else (f"{n_wrn} 项建议核对" if n_wrn else "格式检查全部通过")
+        overall_icon  = "✕" if n_err else ("！" if n_wrn else "✓")
 
-        status_color = "#c53030" if n_err else ("#b7791f" if n_wrn else "#276749")
-        status_text  = (f"{n_err} 项必须修改" if n_err else
-                        (f"{n_wrn} 项建议核对" if n_wrn else "全部通过"))
+        errors_section = f"""
+<div class="section">
+  <div class="section-label" style="color:#ef4444">
+    <span class="dot" style="background:#ef4444"></span>必须修改 · {n_err} 项
+  </div>
+  {errors_html}
+</div>""" if errors else ""
+
+        warns_section = f"""
+<div class="section">
+  <div class="section-label" style="color:#f59e0b">
+    <span class="dot" style="background:#f59e0b"></span>建议核对 · {n_wrn} 项
+  </div>
+  {warns_html}
+</div>""" if warns else ""
+
+        passed_open = "open" if not errors and not warns else ""
 
         return f"""<!DOCTYPE html>
 <html lang="zh-CN">
@@ -689,121 +710,295 @@ class Checker:
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>格式审查报告 · {esc(self.path.name)}</title>
 <style>
-  *{{box-sizing:border-box;margin:0;padding:0}}
-  body{{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",
-       "Microsoft YaHei",sans-serif;background:#f5f7fa;color:#1a2433;line-height:1.7}}
-  .header{{background:linear-gradient(135deg,#00335e,#004f8c);color:#fff;
-           padding:2rem 2rem 1.5rem}}
-  .header h1{{font-size:1.25rem;font-weight:700;margin-bottom:.3rem}}
-  .header .meta{{font-size:.82rem;opacity:.75}}
-  .status-banner{{background:#fff;border-bottom:3px solid {status_color};
-                  padding:.75rem 2rem;font-size:.9rem;font-weight:600;
-                  color:{status_color};display:flex;align-items:center;gap:.5rem}}
-  .metrics{{display:flex;flex-wrap:wrap;background:#fff;
-            border-bottom:1px solid #e8ecf1;padding:.5rem 1rem}}
-  .metric{{flex:1;min-width:100px;text-align:center;padding:.8rem .5rem}}
-  .metric-num{{font-size:1.8rem;font-weight:700;line-height:1}}
-  .metric-label{{font-size:.73rem;color:#9aa5b4;margin-top:.2rem}}
-  .body{{max-width:800px;margin:0 auto;padding:1.5rem}}
-  .section{{margin-bottom:1.8rem}}
-  .section-head{{font-size:1rem;font-weight:700;margin-bottom:.9rem;
-                 display:flex;align-items:center;gap:.5rem}}
-  .section-head .pill{{font-size:.72rem;font-weight:600;padding:.15rem .55rem;
-                       border-radius:20px}}
-  .pill-red   {{background:#fff0f0;color:#c53030;border:1px solid #fca5a5}}
-  .pill-amber {{background:#fffbeb;color:#b7791f;border:1px solid #fcd34d}}
-  .pill-green {{background:#f0fdf4;color:#276749;border:1px solid #86efac}}
-  details{{background:#fff;border:1px solid #e8ecf1;border-radius:8px;overflow:hidden}}
-  details>summary{{padding:.85rem 1.1rem;cursor:pointer;font-weight:600;
-                   font-size:.92rem;list-style:none;display:flex;
-                   align-items:center;justify-content:space-between}}
-  details>summary::after{{content:"▸";transition:transform .2s}}
-  details[open]>summary::after{{transform:rotate(90deg)}}
-  details>div{{padding:.2rem 1.1rem 1rem}}
-  .manual-list{{list-style:none;display:flex;flex-direction:column;gap:.5rem;
-                padding:.2rem 1.1rem 1rem}}
-  .manual-list li{{font-size:.87rem;color:#374151;
-                   border-bottom:1px solid #f0f0f0;padding-bottom:.45rem}}
-  .manual-list li:last-child{{border-bottom:none}}
-  .footer{{text-align:center;font-size:.78rem;color:#9aa5b4;
-           padding:1.5rem;border-top:1px solid #e8ecf1;background:#fff;
-           margin-top:2rem}}
-  @media(max-width:500px){{.metric-num{{font-size:1.3rem}}}}
+*, *::before, *::after {{ box-sizing: border-box; margin: 0; padding: 0; }}
+
+body {{
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+               "Microsoft YaHei", sans-serif;
+  background: #212121;
+  color: #ececec;
+  min-height: 100vh;
+  line-height: 1.6;
+}}
+
+/* ── top bar ── */
+.topbar {{
+  background: #171717;
+  border-bottom: 1px solid #2d2d2d;
+  padding: .85rem 1.5rem;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 50;
+}}
+.topbar-title {{
+  font-size: .88rem; font-weight: 600; color: #ececec;
+  display: flex; align-items: center; gap: .6rem;
+}}
+.topbar-title .logo {{
+  width: 22px; height: 22px; background: #10a37f; border-radius: 5px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: .75rem; font-weight: 800; color: #fff; flex-shrink: 0;
+}}
+.topbar-meta {{ font-size: .75rem; color: #8e8ea0; }}
+
+/* ── hero ── */
+.hero {{
+  max-width: 720px; margin: 3rem auto 0; padding: 0 1.25rem;
+  text-align: center;
+}}
+.overall-badge {{
+  display: inline-flex; align-items: center; gap: .5rem;
+  background: #2a2a2a; border: 1px solid #3d3d3d;
+  border-radius: 100px; padding: .35rem .9rem;
+  font-size: .8rem; color: #8e8ea0; margin-bottom: 1rem;
+}}
+.hero-status {{
+  font-size: 2.2rem; font-weight: 700;
+  color: {overall_color}; line-height: 1.2; margin-bottom: .4rem;
+}}
+.hero-sub {{ font-size: .9rem; color: #8e8ea0; margin-bottom: 2rem; }}
+
+/* ── progress ring ── */
+.ring-wrap {{
+  display: flex; justify-content: center; margin-bottom: 2.5rem;
+}}
+.ring-svg {{ transform: rotate(-90deg); }}
+.ring-track {{ fill: none; stroke: #2d2d2d; stroke-width: 8; }}
+.ring-fill  {{ fill: none; stroke: {overall_color}; stroke-width: 8;
+               stroke-linecap: round;
+               stroke-dasharray: 251.2;
+               stroke-dashoffset: {251.2 * (1 - pct/100):.1f};
+               transition: stroke-dashoffset .8s ease; }}
+.ring-text  {{ font-size: .95rem; font-weight: 700; fill: #ececec; }}
+.ring-sub   {{ font-size: .45rem; fill: #8e8ea0; }}
+
+/* ── metric cards ── */
+.metrics {{
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: .75rem;
+  max-width: 720px; margin: 0 auto 2.5rem; padding: 0 1.25rem;
+}}
+.metric {{
+  background: #2a2a2a; border: 1px solid #3d3d3d; border-radius: 12px;
+  padding: 1rem .75rem; text-align: center;
+}}
+.metric-num {{ font-size: 1.9rem; font-weight: 700; line-height: 1; }}
+.metric-label {{ font-size: .72rem; color: #8e8ea0; margin-top: .3rem; }}
+
+/* ── main body ── */
+.body {{ max-width: 720px; margin: 0 auto; padding: 0 1.25rem 4rem; }}
+
+.section {{ margin-bottom: 1.5rem; }}
+.section-label {{
+  font-size: .78rem; font-weight: 600; letter-spacing: .04em;
+  text-transform: uppercase; margin-bottom: .75rem;
+  display: flex; align-items: center; gap: .5rem;
+}}
+.dot {{ width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }}
+
+/* ── issue card ── */
+.icard {{
+  background: var(--bg); border: 1px solid var(--border);
+  border-left: 3px solid var(--accent);
+  border-radius: 10px; padding: 1rem 1.1rem;
+  display: flex; gap: .85rem; margin-bottom: .6rem;
+}}
+.icard-icon {{
+  width: 24px; height: 24px; border-radius: 50%;
+  background: var(--accent); color: #fff;
+  font-size: .7rem; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; margin-top: .1rem;
+}}
+.icard-body {{ flex: 1; min-width: 0; }}
+.icard-head {{ display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; margin-bottom: .4rem; }}
+.icard-tag {{ font-size: .72rem; font-weight: 700; }}
+.icard-cat {{
+  font-size: .72rem; background: #2d2d2d; color: #8e8ea0;
+  padding: .1rem .45rem; border-radius: 4px;
+}}
+.icard-name {{ font-size: .88rem; font-weight: 600; color: #ececec; }}
+.icard-row {{ font-size: .82rem; color: #a8a8b3; line-height: 1.5; }}
+.icard-row .lbl {{
+  display: inline-block; width: 2.5rem; color: #5c5c6e;
+  font-size: .75rem; flex-shrink: 0;
+}}
+.icard-row strong {{ color: #ececec; }}
+
+/* ── passed rows ── */
+.pass-block {{
+  background: #2a2a2a; border: 1px solid #3d3d3d;
+  border-radius: 10px; overflow: hidden;
+}}
+.prow {{
+  display: grid;
+  grid-template-columns: 1.2rem 5rem 1fr auto;
+  gap: .6rem; align-items: center;
+  padding: .6rem 1rem; border-bottom: 1px solid #333;
+  font-size: .82rem;
+}}
+.prow:last-child {{ border-bottom: none; }}
+.pcheck {{ color: #10a37f; font-weight: 700; font-size: .85rem; }}
+.pcat {{
+  background: #333; color: #8e8ea0; font-size: .7rem;
+  padding: .1rem .4rem; border-radius: 4px; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis;
+}}
+.pname {{ color: #c8c8d0; }}
+.pval {{ color: #8e8ea0; font-size: .78rem; text-align: right; max-width: 180px;
+         overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }}
+
+/* ── collapsible ── */
+.collapse {{ background: #2a2a2a; border: 1px solid #3d3d3d; border-radius: 10px; overflow: hidden; }}
+.collapse-toggle {{
+  width: 100%; background: none; border: none; cursor: pointer;
+  padding: .85rem 1rem; display: flex; align-items: center;
+  justify-content: space-between; color: #ececec;
+  font-size: .88rem; font-weight: 600; font-family: inherit;
+}}
+.collapse-toggle:hover {{ background: #303030; }}
+.collapse-toggle .chevron {{
+  transition: transform .2s; color: #8e8ea0; font-size: .75rem;
+}}
+.collapse-toggle.open .chevron {{ transform: rotate(90deg); }}
+.collapse-body {{ display: none; }}
+.collapse-body.open {{ display: block; }}
+
+/* ── manual checklist ── */
+.mlist {{
+  display: flex; flex-direction: column; padding: .25rem 0;
+}}
+.mitem {{
+  display: flex; align-items: flex-start; gap: .75rem;
+  padding: .65rem 1rem; cursor: pointer;
+  border-bottom: 1px solid #333; font-size: .85rem; color: #c8c8d0;
+  transition: background .15s;
+}}
+.mitem:last-child {{ border-bottom: none; }}
+.mitem:hover {{ background: #303030; }}
+.mitem input[type=checkbox] {{
+  flex-shrink: 0; width: 16px; height: 16px;
+  accent-color: #10a37f; cursor: pointer; margin-top: .2rem;
+}}
+.mitem input:checked + span {{ text-decoration: line-through; color: #5c5c6e; }}
+
+/* ── footer ── */
+.footer {{
+  text-align: center; font-size: .75rem; color: #5c5c6e; padding: 2rem 1rem;
+  border-top: 1px solid #2d2d2d; margin-top: 1.5rem;
+}}
+.footer a {{ color: #5c5c6e; text-decoration: none; }}
+.footer a:hover {{ color: #8e8ea0; }}
+
+@media (max-width: 500px) {{
+  .metrics {{ grid-template-columns: repeat(2, 1fr); }}
+  .prow {{ grid-template-columns: 1.2rem 1fr; }}
+  .pcat, .pval {{ display: none; }}
+}}
 </style>
 </head>
 <body>
 
-<div class="header">
-  <h1>大连理工大学本科毕业论文 · 格式审查报告</h1>
-  <div class="meta">文件：{esc(self.path.name)} &nbsp;·&nbsp; 审查时间：{now}</div>
+<div class="topbar">
+  <div class="topbar-title">
+    <div class="logo">D</div>
+    大连理工大学毕业论文格式审查
+  </div>
+  <div class="topbar-meta">{esc(self.path.name)} · {now}</div>
 </div>
 
-<div class="status-banner">
-  {'⚠' if n_err or n_wrn else '✓'} &nbsp;{status_text}
+<div class="hero">
+  <div class="overall-badge">
+    <span style="color:{overall_color}">{overall_icon}</span>
+    {overall_label}
+  </div>
+  <div class="hero-status">{overall_label}</div>
+  <div class="hero-sub">共 {n_all} 项自动检查 · {n_ok} 项通过 · 通过率 {pct}%</div>
+
+  <div class="ring-wrap">
+    <svg class="ring-svg" width="120" height="120" viewBox="0 0 90 90">
+      <circle class="ring-track" cx="45" cy="45" r="40"/>
+      <circle class="ring-fill" cx="45" cy="45" r="40"/>
+      <g transform="rotate(90,45,45)">
+        <text class="ring-text" x="45" y="47" text-anchor="middle" dominant-baseline="middle">{pct}%</text>
+        <text class="ring-sub" x="45" y="57" text-anchor="middle">通过率</text>
+      </g>
+    </svg>
+  </div>
 </div>
 
 <div class="metrics">
   <div class="metric">
-    <div class="metric-num" style="color:#1a2433">{n_all}</div>
+    <div class="metric-num" style="color:#ececec">{n_all}</div>
     <div class="metric-label">检查项</div>
   </div>
   <div class="metric">
-    <div class="metric-num" style="color:#276749">{n_ok}</div>
+    <div class="metric-num" style="color:#10a37f">{n_ok}</div>
     <div class="metric-label">已通过</div>
   </div>
   <div class="metric">
-    <div class="metric-num" style="color:#c53030">{n_err}</div>
+    <div class="metric-num" style="color:#ef4444">{n_err}</div>
     <div class="metric-label">必须修改</div>
   </div>
   <div class="metric">
-    <div class="metric-num" style="color:#b7791f">{n_wrn}</div>
+    <div class="metric-num" style="color:#f59e0b">{n_wrn}</div>
     <div class="metric-label">建议核对</div>
   </div>
 </div>
 
 <div class="body">
 
-  {f'''<div class="section">
-    <div class="section-head">
-      <span class="pill pill-red">✗ 必须修改</span>
-    </div>
-    {errors_html}
-  </div>''' if errors else ''}
-
-  {f'''<div class="section">
-    <div class="section-head">
-      <span class="pill pill-amber">△ 建议核对</span>
-    </div>
-    {warns_html}
-  </div>''' if warns else ''}
+  {errors_section}
+  {warns_section}
 
   <div class="section">
-    <details {"open" if not errors and not warns else ""}>
-      <summary>
-        <span>✓ 已通过 &nbsp;<span class="pill pill-green"
-          style="font-size:.75rem">{n_ok} 项</span></span>
-      </summary>
-      <div>{passed_html}</div>
-    </details>
+    <div class="section-label" style="color:#10a37f">
+      <span class="dot" style="background:#10a37f"></span>已通过 · {n_ok} 项
+    </div>
+    <div class="collapse">
+      <button class="collapse-toggle {passed_open}" onclick="toggle(this)">
+        <span>查看通过项</span>
+        <span class="chevron">▶</span>
+      </button>
+      <div class="collapse-body {passed_open}">
+        <div class="pass-block" style="border-radius:0;border:none">
+          {passed_html}
+        </div>
+      </div>
+    </div>
   </div>
 
   <div class="section">
-    <details>
-      <summary>□ 需人工核对（打印前逐项确认）</summary>
-      <ul class="manual-list">
-        {manual_items}
-      </ul>
-    </details>
+    <div class="section-label" style="color:#8e8ea0">
+      <span class="dot" style="background:#5c5c6e"></span>人工核对清单 · {len(self.MANUAL_CHECKS)} 项
+    </div>
+    <div class="collapse">
+      <button class="collapse-toggle" onclick="toggle(this)">
+        <span>打印前逐项勾选确认</span>
+        <span class="chevron">▶</span>
+      </button>
+      <div class="collapse-body">
+        <div class="mlist">
+          {manual_html}
+        </div>
+      </div>
+    </div>
   </div>
 
 </div>
 
 <div class="footer">
-  仅供辅助审查，最终以学院审核意见为准 &nbsp;·&nbsp;
-  <a href="https://github.com/jackeyloveseven/dut-thesis-format-checker"
-     style="color:#9aa5b4">dut-thesis-format-checker</a>
+  仅供辅助审查，最终以学院审核意见为准 ·
+  <a href="https://github.com/jackeyloveseven/dut-thesis-format-checker" target="_blank">
+    dut-thesis-format-checker
+  </a>
 </div>
 
+<script>
+function toggle(btn) {{
+  btn.classList.toggle('open');
+  const body = btn.nextElementSibling;
+  body.classList.toggle('open');
+}}
+</script>
 </body>
 </html>"""
 
