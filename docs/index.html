@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>大连理工大学本科毕业论文格式审查工具</title>
+  <style>
+    :root {
+      --blue:    #00335e;
+      --blue-lt: #004f8c;
+      --gold:    #c8923a;
+      --gray-1:  #f5f7fa;
+      --gray-2:  #e8ecf1;
+      --gray-3:  #9aa5b4;
+      --text:    #1a2433;
+      --text-sm: #4a5568;
+      --red:     #c53030;
+      --amber:   #b7791f;
+      --green:   #276749;
+      --radius:  10px;
+      --shadow:  0 2px 12px rgba(0,0,0,.08);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+                   "Microsoft YaHei", sans-serif;
+      color: var(--text);
+      background: #fff;
+      line-height: 1.7;
+    }
+
+    /* ── nav ── */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: var(--blue);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 2rem; height: 56px;
+      box-shadow: 0 2px 8px rgba(0,0,0,.2);
+    }
+    .nav-brand {
+      color: #fff; font-size: .95rem; font-weight: 600; text-decoration: none;
+      display: flex; align-items: center; gap: .5rem;
+    }
+    .nav-brand svg { opacity: .85; }
+    .nav-links { display: flex; gap: 1.2rem; }
+    .nav-links a {
+      color: rgba(255,255,255,.78); font-size: .85rem; text-decoration: none;
+      transition: color .2s;
+    }
+    .nav-links a:hover { color: #fff; }
+    .nav-gh {
+      display: flex; align-items: center; gap: .4rem;
+      background: rgba(255,255,255,.12); border: 1px solid rgba(255,255,255,.25);
+      color: #fff !important; padding: .3rem .8rem; border-radius: 6px;
+      font-size: .82rem !important; transition: background .2s !important;
+    }
+    .nav-gh:hover { background: rgba(255,255,255,.22) !important; }
+
+    /* ── hero ── */
+    .hero {
+      background: linear-gradient(135deg, var(--blue) 0%, var(--blue-lt) 100%);
+      color: #fff; text-align: center;
+      padding: 5rem 1.5rem 4rem;
+    }
+    .hero-badge {
+      display: inline-block;
+      background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.3);
+      color: rgba(255,255,255,.9); font-size: .78rem; letter-spacing: .06em;
+      padding: .25rem .85rem; border-radius: 20px; margin-bottom: 1.4rem;
+    }
+    .hero h1 {
+      font-size: clamp(1.7rem, 4vw, 2.6rem);
+      font-weight: 700; line-height: 1.3; margin-bottom: 1rem;
+    }
+    .hero h1 span { color: var(--gold); }
+    .hero p {
+      font-size: 1.05rem; color: rgba(255,255,255,.82);
+      max-width: 560px; margin: 0 auto 2.2rem;
+    }
+    .hero-actions { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+    .btn {
+      display: inline-flex; align-items: center; gap: .45rem;
+      padding: .65rem 1.5rem; border-radius: 8px; font-size: .9rem;
+      font-weight: 600; text-decoration: none; transition: transform .15s, box-shadow .15s;
+    }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(0,0,0,.25); }
+    .btn-primary {
+      background: var(--gold); color: #fff;
+    }
+    .btn-outline {
+      background: rgba(255,255,255,.12); border: 1.5px solid rgba(255,255,255,.4);
+      color: #fff;
+    }
+
+    /* ── stats bar ── */
+    .stats {
+      background: #fff; border-bottom: 1px solid var(--gray-2);
+      display: flex; justify-content: center; flex-wrap: wrap; gap: 0;
+    }
+    .stat {
+      padding: 1.1rem 2.5rem; text-align: center;
+      border-right: 1px solid var(--gray-2);
+    }
+    .stat:last-child { border-right: none; }
+    .stat-num { font-size: 1.6rem; font-weight: 700; color: var(--blue); }
+    .stat-label { font-size: .78rem; color: var(--gray-3); margin-top: .1rem; }
+
+    /* ── section common ── */
+    section { padding: 4rem 1.5rem; }
+    section:nth-child(even) { background: var(--gray-1); }
+    .container { max-width: 960px; margin: 0 auto; }
+    .section-title {
+      font-size: 1.4rem; font-weight: 700; color: var(--blue);
+      margin-bottom: .5rem;
+    }
+    .section-sub { color: var(--text-sm); margin-bottom: 2.5rem; font-size: .95rem; }
+
+    /* ── checks grid ── */
+    .checks-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 1.1rem;
+    }
+    .check-card {
+      background: #fff; border: 1px solid var(--gray-2);
+      border-radius: var(--radius); padding: 1.2rem 1.3rem;
+      box-shadow: var(--shadow); transition: box-shadow .2s, transform .2s;
+    }
+    .check-card:hover { box-shadow: 0 4px 20px rgba(0,0,0,.12); transform: translateY(-2px); }
+    .check-icon {
+      width: 36px; height: 36px; border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem; margin-bottom: .8rem;
+    }
+    .icon-blue  { background: #e8f0fb; }
+    .icon-green { background: #e6f4ee; }
+    .icon-amber { background: #fef3e2; }
+    .icon-red   { background: #fde8e8; }
+    .check-card h3 { font-size: .92rem; font-weight: 600; margin-bottom: .3rem; }
+    .check-card p  { font-size: .82rem; color: var(--text-sm); line-height: 1.5; }
+
+    /* ── output levels ── */
+    .levels { display: flex; flex-direction: column; gap: .9rem; }
+    .level {
+      display: flex; gap: 1rem; align-items: flex-start;
+      background: #fff; border-radius: var(--radius);
+      border: 1px solid var(--gray-2); padding: 1.1rem 1.3rem;
+      box-shadow: var(--shadow);
+    }
+    .level-badge {
+      flex-shrink: 0; padding: .2rem .7rem; border-radius: 5px;
+      font-size: .78rem; font-weight: 700; letter-spacing: .03em; margin-top: .1rem;
+    }
+    .badge-red   { background: #fff0f0; color: var(--red); border: 1px solid #fca5a5; }
+    .badge-amber { background: #fffbeb; color: var(--amber); border: 1px solid #fcd34d; }
+    .badge-green { background: #f0fdf4; color: var(--green); border: 1px solid #86efac; }
+    .badge-gray  { background: var(--gray-1); color: var(--text-sm); border: 1px solid var(--gray-2); }
+    .level-body h4 { font-size: .9rem; font-weight: 600; margin-bottom: .2rem; }
+    .level-body p  { font-size: .83rem; color: var(--text-sm); }
+
+    /* ── usage ── */
+    .usage-steps { display: flex; flex-direction: column; gap: 1.5rem; }
+    .step { display: flex; gap: 1.2rem; }
+    .step-num {
+      flex-shrink: 0; width: 32px; height: 32px; border-radius: 50%;
+      background: var(--blue); color: #fff;
+      font-size: .85rem; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      margin-top: .15rem;
+    }
+    .step-body h4 { font-size: .95rem; font-weight: 600; margin-bottom: .4rem; }
+    .step-body p  { font-size: .85rem; color: var(--text-sm); margin-bottom: .6rem; }
+    pre {
+      background: #1e2433; color: #e2e8f0;
+      border-radius: 8px; padding: 1rem 1.2rem;
+      font-size: .82rem; overflow-x: auto; line-height: 1.6;
+      font-family: "Cascadia Code", "Fira Code", "Consolas", monospace;
+    }
+    pre .comment { color: #718096; }
+    pre .cmd     { color: #90cdf4; }
+    pre .arg     { color: #68d391; }
+
+    /* ── limits ── */
+    .limits-list { list-style: none; display: flex; flex-direction: column; gap: .75rem; }
+    .limits-list li {
+      display: flex; gap: .8rem; align-items: flex-start;
+      font-size: .88rem; color: var(--text-sm);
+    }
+    .limits-list li::before {
+      content: "⚠"; color: var(--amber); flex-shrink: 0; margin-top: .05rem;
+    }
+    .limits-list strong { color: var(--text); }
+
+    /* ── skill section ── */
+    .skill-box {
+      background: #fff; border: 1px solid var(--gray-2); border-radius: var(--radius);
+      padding: 1.5rem 1.6rem; box-shadow: var(--shadow);
+    }
+    .skill-box h3 { font-size: 1rem; font-weight: 600; margin-bottom: .6rem; }
+    .skill-box p  { font-size: .87rem; color: var(--text-sm); margin-bottom: 1rem; }
+    .skill-steps  { list-style: none; counter-reset: sk; display: flex; flex-direction: column; gap: .5rem; }
+    .skill-steps li { counter-increment: sk; display: flex; gap: .7rem; font-size: .85rem; }
+    .skill-steps li::before {
+      content: counter(sk);
+      background: var(--blue-lt); color: #fff;
+      width: 20px; height: 20px; border-radius: 50%;
+      font-size: .72rem; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; margin-top: .15rem;
+    }
+
+    /* ── standard table ── */
+    .std-table-wrap { overflow-x: auto; }
+    table {
+      width: 100%; border-collapse: collapse; font-size: .85rem;
+    }
+    th {
+      background: var(--blue); color: #fff;
+      padding: .65rem 1rem; text-align: left; font-weight: 600;
+    }
+    td { padding: .6rem 1rem; border-bottom: 1px solid var(--gray-2); }
+    tr:last-child td { border-bottom: none; }
+    tr:nth-child(even) td { background: var(--gray-1); }
+    td:first-child { font-weight: 500; white-space: nowrap; }
+
+    /* ── footer ── */
+    footer {
+      background: #0f1c2e; color: rgba(255,255,255,.55);
+      text-align: center; padding: 2rem 1.5rem; font-size: .82rem;
+    }
+    footer a { color: rgba(255,255,255,.7); text-decoration: none; }
+    footer a:hover { color: #fff; }
+
+    @media (max-width: 600px) {
+      .stat { padding: .9rem 1.3rem; }
+      .nav-links .hide-sm { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- nav -->
+<nav>
+  <a class="nav-brand" href="#">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+    </svg>
+    DUT 毕业论文格式审查
+  </a>
+  <div class="nav-links">
+    <a href="#checks" class="hide-sm">检查项</a>
+    <a href="#usage" class="hide-sm">使用方法</a>
+    <a href="#standard" class="hide-sm">格式标准</a>
+    <a class="nav-gh" href="https://github.com/jackeyloveseven/dut-thesis-format-checker" target="_blank">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.017C22 6.484 17.522 2 12 2z"/>
+      </svg>
+      GitHub
+    </a>
+  </div>
+</nav>
+
+<!-- hero -->
+<div class="hero">
+  <div class="hero-badge">大连理工大学 · 2025年5月版标准</div>
+  <h1>本科毕业论文<br><span>格式自动审查工具</span></h1>
+  <p>依据《大连理工大学大学生毕业设计（论文）规范化要求》，一键检查 .docx 格式，输出三级问题清单，配合 Claude Code skill 一步到位。</p>
+  <div class="hero-actions">
+    <a class="btn btn-primary" href="https://github.com/jackeyloveseven/dut-thesis-format-checker/releases" target="_blank">
+      ↓ 下载脚本
+    </a>
+    <a class="btn btn-outline" href="https://github.com/jackeyloveseven/dut-thesis-format-checker" target="_blank">
+      查看源码
+    </a>
+  </div>
+</div>
+
+<!-- stats -->
+<div class="stats">
+  <div class="stat"><div class="stat-num">11</div><div class="stat-label">自动检查类别</div></div>
+  <div class="stat"><div class="stat-num">40+</div><div class="stat-label">检查子项</div></div>
+  <div class="stat"><div class="stat-num">0</div><div class="stat-label">额外依赖（纯标准库）</div></div>
+  <div class="stat"><div class="stat-num">3</div><div class="stat-label">输出问题等级</div></div>
+</div>
+
+<!-- checks -->
+<section id="checks">
+  <div class="container">
+    <div class="section-title">检查项覆盖范围</div>
+    <div class="section-sub">自动检查以下内容，无法自动检查的项目输出人工核对清单</div>
+    <div class="checks-grid">
+      <div class="check-card">
+        <div class="check-icon icon-blue">📐</div>
+        <h3>页面设置</h3>
+        <p>纸张大小（A4）、四边页边距（上3.5/下2.5/左2.5/右2.5 cm），自动跳过封面节取正文节数据</p>
+      </div>
+      <div class="check-card">
+        <div class="check-icon icon-blue">🔤</div>
+        <h3>正文样式</h3>
+        <p>字号（小四12pt）、行距（多倍1.25倍）</p>
+      </div>
+      <div class="check-card">
+        <div class="check-icon icon-blue">📝</div>
+        <h3>标题样式</h3>
+        <p>一至三级标题字体（黑体）、字号（小三/四号/小四）、行距（≥1.5倍）</p>
+      </div>
+      <div class="check-card">
+        <div class="check-icon icon-green">🏗</div>
+        <h3>论文结构</h3>
+        <p>摘要、Abstract、关键词、目录、绪论、相关工作、实验、参考文献、致谢等必要章节</p>
+      </div>
+      <div class="check-card">
+        <div class="check-icon icon-green">📊</div>
+        <h3>图表编号</h3>
+        <p>格式须为 X.X（如图3.1），检测不合规的连字符格式（图3-1），并验证正文有图表引用</p>
+      </div>
+      <div class="check-card">
+        <div class="check-icon icon-green">🔢</div>
+        <h3>章节编号</h3>
+        <p>一至三级标题数量与格式，检测跳号（如2.1后直接出现2.3）</p>
+      </div>
+      <div class="check-card">
+        <div class="check-icon icon-amber">📚</div>
+        <h3>参考文献</h3>
+        <p>数量（≥15篇）、[n]编号（含Word自动列表编号识别）、中英文分布、GB/T 7714 类型标注、URL/DOI</p>
+      </div>
+      <div class="check-card">
+        <div class="check-icon icon-amber">📄</div>
+        <h3>摘要</h3>
+        <p>中英文摘要存在性、关键词数量（3-8个）</p>
+      </div>
+      <div class="check-card">
+        <div class="check-icon icon-amber">📃</div>
+        <h3>页眉页脚</h3>
+        <p>页眉文件、页脚/页码文件存在性检查</p>
+      </div>
+      <div class="check-card">
+        <div class="check-icon icon-red">💬</div>
+        <h3>字数统计</h3>
+        <p>中英文字数合计，要求正文≥20,000字</p>
+      </div>
+      <div class="check-card">
+        <div class="check-icon icon-red">🏷</div>
+        <h3>封面题目</h3>
+        <p>论文题目长度不超过25个汉字</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- output levels -->
+<section>
+  <div class="container">
+    <div class="section-title">输出三级问题</div>
+    <div class="section-sub">每项检查结果归入以下三个等级，方便按优先级处理</div>
+    <div class="levels">
+      <div class="level">
+        <span class="level-badge badge-red">✗ 必须修改</span>
+        <div class="level-body">
+          <h4>明确违反规范</h4>
+          <p>如页边距错误、图表编号使用连字符格式、参考文献条目不足15篇——提交格式审查前必须改完。</p>
+        </div>
+      </div>
+      <div class="level">
+        <span class="level-badge badge-amber">△ 建议核对</span>
+        <div class="level-body">
+          <h4>可能有问题，需人工确认</h4>
+          <p>如标题行距偏低、参考文献使用Word自动编号（脚本已识别但建议目视确认）。</p>
+        </div>
+      </div>
+      <div class="level">
+        <span class="level-badge badge-green">✓ 已通过</span>
+        <div class="level-body">
+          <h4>自动检查通过</h4>
+          <p>展示具体实测值，方便核对。</p>
+        </div>
+      </div>
+      <div class="level">
+        <span class="level-badge badge-gray">□ 人工核查</span>
+        <div class="level-body">
+          <h4>程序无法自动判断</h4>
+          <p>首行缩进、图题位置、三线表、手写签字、打印方式等——报告末尾以清单形式列出，打印前逐项确认。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- usage -->
+<section id="usage">
+  <div class="container">
+    <div class="section-title">使用方法</div>
+    <div class="section-sub">纯 Python 标准库，无需 pip install，Python 3.8+ 即可运行</div>
+    <div class="usage-steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <h4>下载脚本</h4>
+          <p>克隆仓库或直接下载 <code>dut_format_checker.py</code></p>
+          <pre><span class="cmd">git clone</span> <span class="arg">https://github.com/jackeyloveseven/dut-thesis-format-checker.git</span></pre>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <h4>运行审查</h4>
+          <p>将论文 .docx 路径作为参数传入，省略则自动查找当前目录</p>
+          <pre><span class="cmd">python</span> dut_format_checker.py <span class="arg">论文.docx</span>
+
+<span class="comment"># 省略路径，自动查找当前目录第一个 .docx</span>
+<span class="cmd">python</span> dut_format_checker.py</pre>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <h4>查看报告</h4>
+          <p>终端输出三级问题清单，按"必须修改 → 建议核对 → 已通过 → 人工核查"顺序排列</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Claude Code skill -->
+    <div style="margin-top: 2.5rem;">
+      <div class="section-title" style="font-size:1.1rem;">配合 Claude Code 使用（可选）</div>
+      <div class="section-sub">使用 <code>/dut-format-check</code> 命令，Claude 会运行脚本并追加深度文本分析</div>
+      <div class="skill-box">
+        <h3>启用 <code>/dut-format-check</code> Skill</h3>
+        <p>Skill 在脚本报告基础上额外检查：图表引用一致性、参考文献正文引用完整性、各章本章小结、标题跳号、中英文关键词数量匹配。</p>
+        <ol class="skill-steps">
+          <li>将 <code>.claude/commands/dut-format-check.md</code> 拷贝到你项目的 <code>.claude/commands/</code> 目录</li>
+          <li>在 Claude Code 对话中输入 <code>/dut-format-check 论文.docx</code></li>
+          <li>Claude 自动运行脚本 + 补充分析，输出完整三级报告</li>
+        </ol>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- standard table -->
+<section id="standard">
+  <div class="container">
+    <div class="section-title">大连理工格式速查</div>
+    <div class="section-sub">依据官方模板（2025年5月更新版）</div>
+    <div class="std-table-wrap">
+      <table>
+        <thead>
+          <tr><th>项目</th><th>标准</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>纸张</td><td>A4，210×297 mm</td></tr>
+          <tr><td>页边距</td><td>上 3.5 / 下 2.5 / 左 2.5 / 右 2.5 cm</td></tr>
+          <tr><td>正文字号</td><td>小四（12pt），中文宋体，英文 Times New Roman</td></tr>
+          <tr><td>正文行距</td><td>多倍行距 1.25，段前段后 0</td></tr>
+          <tr><td>首行缩进</td><td>2字符（不可用空格代替）</td></tr>
+          <tr><td>一级标题</td><td>黑体小三（15pt），<strong>居左</strong>，1.5倍行距，段后11磅</td></tr>
+          <tr><td>二级标题</td><td>黑体四号（14pt），居左，1.5倍行距，段前0.5行</td></tr>
+          <tr><td>三级标题</td><td>黑体小四（12pt），居左，1.5倍行距，段前0.5行</td></tr>
+          <tr><td>页眉</td><td>论文中文题目，宋体五号，居中</td></tr>
+          <tr><td>页码</td><td>宋体小五，居中，页脚底部；正文从第1页起</td></tr>
+          <tr><td>图编号</td><td>图X.X（如图3.1），题注在图下，宋体五号居中</td></tr>
+          <tr><td>表编号</td><td>表X.X（如表3.1），题注在表上，宋体五号居中</td></tr>
+          <tr><td>公式编号</td><td>(章号.序号)，行末右对齐，公式居中</td></tr>
+          <tr><td>参考文献</td><td>GB/T 7714-2015，[n]顺序编号，宋体五号</td></tr>
+          <tr><td>参考文献数量</td><td>≥15篇，期刊≥5篇，含英文和近五年文献</td></tr>
+          <tr><td>论文字数</td><td>正文 ≥ 20,000字，≥ 30页</td></tr>
+          <tr><td>摘要</td><td>≥300字，限一页，关键词3-5个</td></tr>
+          <tr><td>打印</td><td>封面/声明/摘要单面；目录/正文/致谢双面</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- limits -->
+<section>
+  <div class="container">
+    <div class="section-title">已知局限</div>
+    <div class="section-sub">以下情形脚本无法完全自动判断，需人工核对</div>
+    <ul class="limits-list">
+      <li><strong>页边距多节文档：</strong>自动跳过封面节取正文节，若文档有3+节且各节边距不同，可能取错节</li>
+      <li><strong>参考文献自动编号：</strong>Word numPr 自动编号的 [n] 不写入文本流，脚本通过 XML 属性识别并给出提示，建议目视确认</li>
+      <li><strong>局部手动改字体：</strong>字体检查基于 styles.xml，正文中手动改格式的段落无法检测</li>
+      <li><strong>视觉格式：</strong>首行缩进、图题位置、三线表、手写签字等无法自动检查，见报告末尾人工核对清单</li>
+    </ul>
+  </div>
+</section>
+
+<!-- footer -->
+<footer>
+  <p>
+    <a href="https://github.com/jackeyloveseven/dut-thesis-format-checker" target="_blank">jackeyloveseven/dut-thesis-format-checker</a>
+    &nbsp;·&nbsp; 依据大连理工大学本科毕业论文规范化要求（2025年5月版）
+  </p>
+  <p style="margin-top:.5rem;">仅供辅助审查，最终以学院审核意见为准</p>
+</footer>
+
+</body>
+</html>
